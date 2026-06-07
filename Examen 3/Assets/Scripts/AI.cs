@@ -2,22 +2,29 @@ using UnityEngine;
 
 public class AI : MonoBehaviour
 {
-    [SerializeField] private Boxer enemyBoxer;
+    [Header("Referencias")]
+    [SerializeField] private Boxer boxer2;
+
+    public ActionType[] WeightedActions =
+    {
+        ActionType.Punch,
+        ActionType.Punch,
+        ActionType.Block,
+        ActionType.Dodge
+    };
 
     public void GenerateActions()
     {
-        if (enemyBoxer == null)
-        {
-            Debug.LogError("AI: Falta asignar enemyBoxer.");
-            return;
-        }
+        boxer2.ClearActions();
 
-        enemyBoxer.ClearActions();
-
-        for (int i = 0; i < 3; i++)
+        while (boxer2.actions.Count < 3)
         {
-            ActionType randomAction = (ActionType)Random.Range(0, 3);
-            enemyBoxer.AddAction(randomAction);
+            ActionType action = WeightedActions[Random.Range(0, WeightedActions.Length)];
+
+            if (action == ActionType.Dodge && boxer2.HasAction(ActionType.Dodge))
+                continue;
+
+            boxer2.AddAction(action);
         }
     }
 }

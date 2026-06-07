@@ -1,33 +1,27 @@
-using TMPro;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 
-[RequireComponent(typeof(Image))]
 public class ActionSlotUI : MonoBehaviour
 {
     [Header("Referencias")]
     [SerializeField] private TMP_Text slotText;
     [SerializeField] private Image background;
 
-    [Header("Colores")]
-    [SerializeField] private Color emptyColor = new Color(0.12f, 0.12f, 0.12f);
+    private Color emptyColor = new Color(0.12f, 0.12f, 0.12f);
+    private Color completedColor = new Color(0.32f, 0.32f, 0.32f);
+    private Color pendingColor = new Color(0.64f, 0.64f, 0.64f);
+    private Color activeColor = new Color(1f, 1f, 1f);
 
-    [SerializeField] private Color completedColor = new Color(0.32f, 0.32f, 0.32f);
-
-    [SerializeField] private Color pendingColor = new Color(0.65f, 0.65f, 0.65f);
-
-    [SerializeField] private Color activeColor = Color.white;
+    private Dictionary<ActionType, string> ActionNames = new()
+    {
+        { ActionType.Punch, "Pegar" },
+        { ActionType.Block, "Bloquear" },
+        { ActionType.Dodge, "Esquivar" }
+    };
 
     private int slotNumber;
-
-    private void Awake()
-    {
-        if (background == null)
-            background = GetComponent<Image>();
-
-        if (slotText == null)
-            slotText = GetComponentInChildren<TMP_Text>(true);
-    }
 
     public void Configure(int number)
     {
@@ -37,56 +31,32 @@ public class ActionSlotUI : MonoBehaviour
 
     public void SetEmpty()
     {
-        SetVisual(
-            emptyColor,
-            $"{slotNumber}°"
-        );
+        SetVisual(emptyColor, $"{slotNumber}°");
     }
 
     public void SetPending(ActionType action)
     {
-        SetVisual(
-            pendingColor,
-            $"{slotNumber}° {GetActionName(action)}"
-        );
+        SetVisual(pendingColor, $"{slotNumber}° {GetActionName(action)}");
     }
 
     public void SetActive(ActionType action)
     {
-        SetVisual(
-            activeColor,
-            $"{slotNumber}° {GetActionName(action)}"
-        );
+        SetVisual(activeColor, $"{slotNumber}° {GetActionName(action)}");
     }
 
     public void SetCompleted(ActionType action)
     {
-        SetVisual(
-            completedColor,
-            $"{slotNumber}° {GetActionName(action)}"
-        );
+        SetVisual(completedColor, $"{slotNumber}° {GetActionName(action)}");
     }
 
     private void SetVisual(Color backgroundColor, string text)
     {
-        if (background != null)
-            background.color = backgroundColor;
-
-        if (slotText != null)
-        {
-            slotText.text = text;
-            slotText.color = Color.black;
-        }
+        background.color = backgroundColor;
+        slotText.text = text;
     }
 
     private string GetActionName(ActionType action)
     {
-        return action switch
-        {
-            ActionType.Punch => "Pegar",
-            ActionType.Block => "Bloquear",
-            ActionType.Dodge => "Esquivar",
-            _ => "Acción"
-        };
+        return ActionNames.GetValueOrDefault(action, "Acción");
     }
 }

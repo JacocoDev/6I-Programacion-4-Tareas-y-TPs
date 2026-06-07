@@ -5,272 +5,136 @@ using UnityEngine.UI;
 
 public class UIManager : MonoBehaviour
 {
-    [Header("Pantalla / Menú")]
-    [SerializeField] private GameObject gameTitleObject;
-    [SerializeField] private GameObject startRestartButtonObject;
-    [SerializeField] private TMP_Text startRestartButtonText;
-
-    [Header("Combat UI - Objetos generales")]
-    [SerializeField] private GameObject boxer1IconObject;
-    [SerializeField] private GameObject boxer2IconObject;
-    [SerializeField] private GameObject actionListBoxer1Object;
-    [SerializeField] private GameObject actionListBoxer2Object;
-
-    [Header("Vida")]
-    [SerializeField] private Slider playerHealthBar;
-    [SerializeField] private Slider enemyHealthBar;
-
-    [Header("Texto final")]
-    [SerializeField] private TMP_Text finalText;
-
-    [Header("Lista de acciones del jugador")]
-    [SerializeField] private ActionSlotUI[] playerActionSlots = new ActionSlotUI[3];
-
-    [Header("Lista de acciones del enemigo")]
-    [SerializeField] private ActionSlotUI[] enemyActionSlots = new ActionSlotUI[3];
-
-    [Header("Botones de acción")]
+    [Header("Referencias")]
+    [SerializeField] private GameObject menusUI;
+    [SerializeField] private GameObject fightUI;
+    [SerializeField] private TMP_Text mainText;
+    [SerializeField] private TMP_Text menuButtonText;
     [SerializeField] private ActionButton[] actionButtons;
 
-    private const string StartLabel = "¡Pelear!";
-    private const string RestartLabel = "¡Revancha!";
+    [Header("Boxers UI")]
+    public BoxerUI boxer1UI;
+    public BoxerUI boxer2UI;
 
-    private void Awake()
+    public void InitializeCombat(Boxer boxer1, Boxer boxer2)
     {
-        ConfigureSlots(playerActionSlots);
-        ConfigureSlots(enemyActionSlots);
-        SetStartButtonLabel(StartLabel);
-        ShowMenu();
+        ConfigureHealthBar(boxer1UI.healthBar, boxer1);
+        ConfigureHealthBar(boxer2UI.healthBar, boxer2);
+
+        ConfigureActionSlots(boxer1UI);
+        ConfigureActionSlots(boxer2UI);
+
+        RefreshActionSlots(boxer1UI, boxer1.actions);
+        RefreshActionSlots(boxer2UI, boxer2.actions);
     }
 
-    public void InitializeCombat(Boxer player, Boxer enemy)
+    private void ConfigureHealthBar(Slider healthBar, Boxer boxer)
     {
-        if (playerHealthBar != null)
-        {
-            playerHealthBar.minValue = 0;
-            playerHealthBar.maxValue = player.MaxHealth;
-            playerHealthBar.wholeNumbers = true;
-            playerHealthBar.value = player.CurrentHealth;
-        }
-
-        if (enemyHealthBar != null)
-        {
-            enemyHealthBar.minValue = 0;
-            enemyHealthBar.maxValue = enemy.MaxHealth;
-            enemyHealthBar.wholeNumbers = true;
-            enemyHealthBar.value = enemy.CurrentHealth;
-        }
-
-        RefreshPlayerActionSlots(player.Actions);
-        RefreshEnemyActionSlots(enemy.Actions);
+        healthBar.minValue = 0;
+        healthBar.maxValue = boxer.maxHealth;
+        healthBar.wholeNumbers = true;
+        healthBar.value = boxer.CurrentHealth;
     }
 
-    public void ShowMenu()
+    public void UpdateHealthBars(Boxer boxer1, Boxer boxer2)
     {
-        SetStartButtonLabel(StartLabel);
+        boxer1UI.healthBar.value = boxer1.CurrentHealth;
+        boxer2UI.healthBar.value = boxer2.CurrentHealth;
+    }
 
-        if (gameTitleObject != null)
-            gameTitleObject.SetActive(true);
+    public void RefreshActionButtons(Boxer boxer, bool isResolvingRound, bool gameEnded)
+    {
+        bool hasTooManyActions = boxer.actions.Count >= 3;
+        bool buttonsLocked = gameEnded || isResolvingRound || hasTooManyActions;
+        bool dodgeUsed = boxer.HasAction(ActionType.Dodge);
 
-        if (startRestartButtonObject != null)
-            startRestartButtonObject.SetActive(true);
+        foreach (ActionButton button in actionButtons)
+        {
+            button.SetLocked(buttonsLocked);
 
-        if (finalText != null)
-            finalText.gameObject.SetActive(false);
+            if (buttonsLocked)
+            {
+                continue;
+            }
 
-        SetCombatUIActive(false);
+            if (button.actionType == ActionType.Dodge)
+            {
+                button.SetDodgeUsed(dodgeUsed);
+            }
+        }
+    }
+
+    private void ConfigureActionSlots(BoxerUI boxerUI)
+    {
+        for (int i = 0; i < boxerUI.actionSlots.Length; i++)
+        {
+            boxerUI.actionSlots[i].Configure(i + 1);
+        }
+    }
+    
+
+    public void RefreshActionSlots(BoxerUI boxerUI, List<ActionType> actions)
+    {
+        for (int i = 0; i < boxerUI.actionSlots.Length; i++)
+        {
+            if (i >= actions.Count)
+            {
+                boxerUI.actionSlots[i].SetEmpty();
+                continue;
+            }
+
+            boxerUI.actionSlots[i].SetPending(actions[i]);
+        }
+    }
+
+    public void SetExecuting(BoxerUI boxerUI, List<ActionType> actions, int activeIndex)
+    {
+        for (int i = 0; i < boxerUI.actionSlots.Length; i++)
+        {
+            if (i >= actions.Count)
+            {
+                boxerUI.actionSlots[i].SetEmpty();
+                continue;
+            }
+
+            ActionType action = actions[i];
+
+            if (i < activeIndex)
+            {
+                boxerUI.actionSlots[i].SetCompleted(action);
+                continue;
+            }
+
+            if (i == activeIndex)
+            {
+                boxerUI.actionSlots[i].SetActive(action);
+                continue;
+            }
+
+            boxerUI.actionSlots[i].SetPending(action);
+        }
     }
 
     public void ShowGameplayUI()
     {
-        if (gameTitleObject != null)
-            gameTitleObject.SetActive(false);
-
-        if (startRestartButtonObject != null)
-            startRestartButtonObject.SetActive(false);
-
-        if (finalText != null)
-            finalText.gameObject.SetActive(false);
-
-        SetCombatUIActive(true);
+        menusUI.SetActive(false);
+        fightUI.SetActive(true);
     }
 
-    public void ShowVictoryScreen()
+    public void ShowEndScreen(string message, Color color)
     {
-        ShowEndScreen("VICTORIA", Color.green);
+        menuButtonText.text = "¡Revancha!";
+
+        menusUI.SetActive(true);
+        fightUI.SetActive(false);
+
+        ShowFinalMessage(message, color);
     }
 
-    public void ShowDefeatScreen()
+    private void ShowFinalMessage(string message, Color color)
     {
-        ShowEndScreen("DERROTA", Color.red);
-    }
-
-    public void ShowDrawScreen()
-    {
-        ShowEndScreen("EMPATE", Color.yellow);
-    }
-
-    public void UpdateHealthBars(Boxer player, Boxer enemy)
-    {
-        if (playerHealthBar != null)
-            playerHealthBar.value = player.CurrentHealth;
-
-        if (enemyHealthBar != null)
-            enemyHealthBar.value = enemy.CurrentHealth;
-    }
-
-    public void RefreshPlayerActionSlots(IReadOnlyList<ActionType> actions)
-    {
-        RefreshActionSlots(playerActionSlots, actions);
-    }
-
-    public void RefreshEnemyActionSlots(IReadOnlyList<ActionType> actions)
-    {
-        RefreshActionSlots(enemyActionSlots, actions);
-    }
-
-    public void SetPlayerSlotExecuting(int index, IReadOnlyList<ActionType> actions)
-    {
-        SetExecuting(playerActionSlots, actions, index);
-    }
-
-    public void SetEnemySlotExecuting(int index, IReadOnlyList<ActionType> actions)
-    {
-        SetExecuting(enemyActionSlots, actions, index);
-    }
-
-    public void SetActionButtonsInteractable(bool value)
-    {
-        if (actionButtons == null)
-            return;
-
-        foreach (ActionButton actionButton in actionButtons)
-        {
-            if (actionButton != null)
-                actionButton.SetInteractable(value);
-        }
-    }
-
-    public void SetStartButtonLabel(string label)
-    {
-        if (startRestartButtonText != null)
-            startRestartButtonText.text = label;
-    }
-
-    private void ShowEndScreen(string message, Color color)
-    {
-        if (gameTitleObject != null)
-            gameTitleObject.SetActive(false);
-
-        if (startRestartButtonObject != null)
-            startRestartButtonObject.SetActive(true);
-
-        SetStartButtonLabel(RestartLabel);
-
-        if (finalText != null)
-        {
-            finalText.gameObject.SetActive(true);
-            finalText.text = message;
-            finalText.color = color;
-        }
-
-        SetCombatUIActive(false);
-    }
-
-    private void SetCombatUIActive(bool value)
-    {
-        if (boxer1IconObject != null)
-            boxer1IconObject.SetActive(value);
-
-        if (boxer2IconObject != null)
-            boxer2IconObject.SetActive(value);
-
-        if (actionListBoxer1Object != null)
-            actionListBoxer1Object.SetActive(value);
-
-        if (actionListBoxer2Object != null)
-            actionListBoxer2Object.SetActive(value);
-
-        if (playerHealthBar != null)
-            playerHealthBar.gameObject.SetActive(value);
-
-        if (enemyHealthBar != null)
-            enemyHealthBar.gameObject.SetActive(value);
-
-        SetButtonsActive(actionButtons, value);
-
-        if (!value)
-            SetActionButtonsInteractable(false);
-    }
-
-    private void SetButtonsActive(ActionButton[] buttons, bool value)
-    {
-        if (buttons == null)
-            return;
-
-        foreach (ActionButton button in buttons)
-        {
-            if (button != null)
-                button.gameObject.SetActive(value);
-        }
-    }
-
-    private void ConfigureSlots(ActionSlotUI[] slots)
-    {
-        if (slots == null)
-            return;
-
-        for (int i = 0; i < slots.Length; i++)
-        {
-            if (slots[i] != null)
-                slots[i].Configure(i + 1);
-        }
-    }
-
-    private void RefreshActionSlots(ActionSlotUI[] slots, IReadOnlyList<ActionType> actions)
-    {
-        if (slots == null)
-            return;
-
-        for (int i = 0; i < slots.Length; i++)
-        {
-            if (slots[i] == null)
-                continue;
-
-            bool hasAction = actions != null && i < actions.Count;
-
-            if (!hasAction)
-            {
-                slots[i].SetEmpty();
-                continue;
-            }
-
-            slots[i].SetPending(actions[i]);
-        }
-    }
-
-    private void SetExecuting(ActionSlotUI[] slots, IReadOnlyList<ActionType> actions, int activeIndex)
-    {
-        if (slots == null || actions == null)
-            return;
-
-        for (int i = 0; i < slots.Length; i++)
-        {
-            if (slots[i] == null)
-                continue;
-
-            if (i >= actions.Count)
-            {
-                slots[i].SetEmpty();
-                continue;
-            }
-
-            if (i < activeIndex)
-                slots[i].SetCompleted(actions[i]);
-            else if (i == activeIndex)
-                slots[i].SetActive(actions[i]);
-            else
-                slots[i].SetPending(actions[i]);
-        }
+        mainText.gameObject.SetActive(true);
+        mainText.text = message;
+        mainText.color = color;
     }
 }

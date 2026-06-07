@@ -3,16 +3,10 @@ using UnityEngine;
 
 public class Boxer : MonoBehaviour
 {
-    [Header("Vida")]
-    [SerializeField] private int maxHealth = 100;
+    public List<ActionType> actions = new List<ActionType>();
 
-    [Header("Acciones")]
-    [SerializeField] private List<ActionType> actions = new List<ActionType>();
-
-    public int MaxHealth => maxHealth;
-    public int CurrentHealth { get; private set; }
-    public int ActionCount => actions.Count;
-    public IReadOnlyList<ActionType> Actions => actions;
+    public int maxHealth = 20;
+    public int CurrentHealth;
 
     private void Awake()
     {
@@ -22,12 +16,12 @@ public class Boxer : MonoBehaviour
     public void ResetBoxer()
     {
         CurrentHealth = maxHealth;
-        actions.Clear();
+        ClearActions();
     }
 
     public bool AddAction(ActionType action)
     {
-        if (actions.Count >= 3)
+        if ((actions.Count >= 3) || (action == ActionType.Dodge && HasAction(ActionType.Dodge)))
             return false;
 
         actions.Add(action);
@@ -46,6 +40,11 @@ public class Boxer : MonoBehaviour
         }
 
         return false;
+    }
+
+    public bool HasAction(ActionType action)
+    {
+        return actions.Contains(action);
     }
 
     public void ClearActions()
