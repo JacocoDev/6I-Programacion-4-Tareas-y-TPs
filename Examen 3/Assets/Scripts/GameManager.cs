@@ -7,6 +7,7 @@ public class GameManager : MonoBehaviour
     [SerializeField] private Boxer boxer2;
     [SerializeField] private AI AI;
     [SerializeField] private UIManager UIManager;
+    [SerializeField] private AudioManager audioManager;
 
     [Header("Sprites de boxeadores")]
     [SerializeField] private BoxerVisual boxer1Visual;
@@ -53,6 +54,7 @@ public class GameManager : MonoBehaviour
 
     public void OnMenuButtonPressed()
     {
+        audioManager.PlayUIClick();
         StartGame();
     }
 
@@ -183,6 +185,16 @@ public class GameManager : MonoBehaviour
 
         CombatSystem.ResolveTurn(boxer1Action, boxer1PreviousAction, boxer2Action, boxer2PreviousAction, boxer1, boxer2, punchDamage, out bool boxer1TookDamage, out bool boxer2TookDamage);
 
+        if (boxer1TookDamage || boxer2TookDamage)
+        {
+            audioManager.PlayPunch();
+        }
+
+        if ((boxer1Action == ActionType.Punch && boxer2Action == ActionType.Punch) && (boxer1TookDamage || boxer2TookDamage))
+        {
+            audioManager.PlayHit();
+        }
+
         UIManager.UpdateHealthBars(boxer1, boxer2);
 
         bool bothArePunch = boxer1Action == ActionType.Punch && boxer2Action == ActionType.Punch;
@@ -232,6 +244,7 @@ public class GameManager : MonoBehaviour
         if (!boxer1Dead && !boxer2Dead)
             return false;
 
+        audioManager.PlayBell();
         gameEnded = true;
         StopRound();
         UIManager.RefreshActionButtons(boxer1, isResolvingRound, gameEnded);

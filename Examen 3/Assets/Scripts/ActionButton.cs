@@ -6,6 +6,7 @@ public class ActionButton : MonoBehaviour, IPointerClickHandler
 {
     [Header("Referencias")]
     [SerializeField] private GameManager gameManager;
+    [SerializeField] private AudioManager audioManager;
     [SerializeField] private Image fillImage;
 
     public ActionType actionType;
@@ -48,6 +49,7 @@ public class ActionButton : MonoBehaviour, IPointerClickHandler
                 return;
 
             feedbackUntil = Time.time + 0.1f;
+            audioManager.PlayUIClick();
             gameManager.AddAction(actionType);
         }
         else if (eventData.button == PointerEventData.InputButton.Right)
@@ -56,6 +58,7 @@ public class ActionButton : MonoBehaviour, IPointerClickHandler
                 return;
 
             feedbackUntil = Time.time + 0.1f;
+            audioManager.PlayUIClick();
             gameManager.RemoveAction(actionType);
         }
     }
